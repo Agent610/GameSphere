@@ -5,7 +5,7 @@ function Login({ onCreateAccount, onLogin }) {
     <main className="auth-page">
       <section className="auth-card">
         <div className="brand-mark" aria-hidden="true">
-          GS
+          GameSphere
         </div>
 
         <h1>GameSphere</h1>
