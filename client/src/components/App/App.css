@@ -1,0 +1,20 @@
+.app {
+  min-height: 100vh;
+}
+
+.app-message {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  left: 16px;
+  max-width: 440px;
+  margin: 0 auto;
+  padding: 14px 18px;
+  border: 1px solid #36435b;
+  border-radius: 10px;
+  background: #151c2e;
+  color: #f8fafc;
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.5;
+}

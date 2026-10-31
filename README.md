@@ -35,3 +35,10 @@ GameSphere provides a personalized feed that brings together updates from follow
 - **Following:** See posts and gaming activity from people you follow.
 - **Official News:** Keep up with announcements, game releases, updates, and industry news from official gaming sources.
 - **Personalized Experience:** Bring social activity and gaming news together in one convenient feed.
+
+## Contributors
+
+- Devin Bhavsar
+- Alejandro Jimenez
+- Matthew Richards
+- John Siordia
