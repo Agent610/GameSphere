@@ -1,26 +1,33 @@
+// Routes mounted at /api/users (see app.js): profiles and follows.
+
 import express from "express";
+import {
+  deleteAccount,
+  getUserById,
+  updateProfile,
+} from "../controllers/userController.js";
+import authMiddleware from "../middleware/authMiddleware.js";
+import {
+  followUser,
+  getFollowers,
+  getFollowing,
+  unfollowUser,
+} from "../controllers/followController.js";
 
 const router = express.Router();
 
-import {
-  getAllUsers,
-  getUserById,
-  signup,
-  login,
-  updateProfile,
-  deleteAccount,
-} from "../controllers/userController.js";
+// The signed-in user's own account. "me" stands in for their id, which is read
+// from the token rather than the URL.
+router.patch("/me", authMiddleware, updateProfile);
+router.delete("/me", authMiddleware, deleteAccount);
 
-router.get("/", getAllUsers);
+// Anyone can see who follows whom; changing your follows requires a token.
+router.get("/:userId/followers", getFollowers);
+router.get("/:userId/following", getFollowing);
+router.post("/:userId/follow", authMiddleware, followUser);
+router.delete("/:userId/follow", authMiddleware, unfollowUser);
 
+// Public profile.
 router.get("/:userId", getUserById);
-
-router.post("/signup", signup);
-
-router.post("/login", login);
-
-router.patch("/updateProfile", updateProfile);
-
-router.delete("/deleteAccount", deleteAccount);
 
 export default router;
