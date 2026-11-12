@@ -1,6 +1,18 @@
 import "./Register.css";
 
 function Register({ onBackToLogin, onRegister }) {
+  const platforms = ["PlayStation", "Xbox", "Nintendo", "PC", "Mobile"];
+
+  function handleSubmit(event) {
+    event.preventDefault();
+
+    const formData = new FormData(event.currentTarget);
+    const primaryPlatform = formData.get("platform");
+    const secondPlatform = formData.get("secondPlatform");
+
+    onRegister(event);
+  }
+
   return (
     <main className="auth-page">
       <section className="auth-card">
@@ -15,14 +27,14 @@ function Register({ onBackToLogin, onRegister }) {
 
         <h2>Create account</h2>
 
-        <form onSubmit={onRegister}>
+        <form onSubmit={handleSubmit}>
           <label htmlFor="first-name">First Name</label>
           <input
             id="first-name"
             name="firstName"
             type="text"
             placeholder="First Name"
-            autoComplete="Name"
+            autoComplete="given-name"
             required
           />
 
@@ -32,21 +44,38 @@ function Register({ onBackToLogin, onRegister }) {
             name="lastName"
             type="text"
             placeholder="Last Name"
-            autoComplete="Name"
+            autoComplete="family-name"
             required
           />
 
-          <label htmlFor="platform">Platform</label>
+          <label htmlFor="platform">Primary Platform</label>
           <select id="platform" name="platform" defaultValue="" required>
             <option value="" disabled>
-              Choose your platform
+              Choose your main platform
             </option>
-            <option value="PlayStation">PlayStation</option>
-            <option value="Xbox">Xbox</option>
-            <option value="Nintendo">Nintendo</option>
-            <option value="PC">PC</option>
-            <option value="Mobile">Mobile</option>
+
+            {platforms.map((platform) => (
+              <option key={platform} value={platform}>
+                {platform}
+              </option>
+            ))}
           </select>
+
+          <label htmlFor="second-platform">Second Platform (Optional)</label>
+
+          <select id="second-platform" name="secondPlatform" defaultValue="">
+            <option value="">Choose another platform (Optional)</option>
+
+            {platforms.map((platform) => (
+              <option key={platform} value={platform}>
+                {platform}
+              </option>
+            ))}
+          </select>
+
+          <p className="platform-hint">
+            Play on more than one platform? Add another one here.
+          </p>
 
           <label htmlFor="register-email">Email</label>
           <input
@@ -64,7 +93,7 @@ function Register({ onBackToLogin, onRegister }) {
             name="password"
             type="password"
             placeholder="Create your password"
-            autoComplete="password"
+            autoComplete="new-password"
             minLength={8}
             required
           />
@@ -75,7 +104,7 @@ function Register({ onBackToLogin, onRegister }) {
         </form>
 
         <p className="auth-switch">
-          Already have an account?{""}
+          Already have an account?{" "}
           <button type="button" className="text-button" onClick={onBackToLogin}>
             Sign In
           </button>
