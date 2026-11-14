@@ -1,0 +1,104 @@
+// GameSphere data model, drawn as tables.
+// These are MongoDB collections. Relationships are ObjectId references.
+// platforms and genres are embedded arrays on Game, not their own collections.
+// Open this file at https://dbdiagram.io to see the diagram.
+
+Project GameSphere {
+  Note: '''
+  MongoDB collections for the GameSphere API.
+  A user has many library entries, wishlist items, follows, and posts through separate collections.
+  '''
+}
+
+Enum platform {
+  PlayStation
+  Xbox
+  Nintendo
+  PC
+  Mobile
+}
+
+Enum library_status {
+  next
+  playing
+  completed
+}
+
+Table User {
+  _id objectid [pk, note: 'MongoDB ObjectId. Collection: users']
+  username varchar(32) [not null, unique, note: 'Stored lowercase. 3 to 32 characters.']
+  firstName varchar(64) [not null]
+  lastName varchar(64) [not null]
+  email varchar [not null, unique, note: 'Stored lowercase. Private to the account owner.']
+  passwordHash varchar [not null, note: 'bcrypt hash. Omitted from queries unless explicitly selected.']
+  platform platform [not null, note: 'The user\'s main gaming platform.']
+  createdAt datetime [not null]
+  updatedAt datetime [not null]
+}
+
+Table Game {
+  _id objectid [pk, note: 'MongoDB ObjectId. Collection: games']
+  title varchar(120) [not null, unique]
+  platforms varchar [note: 'Embedded array. Each value is a platform: PlayStation, Xbox, Nintendo, PC, or Mobile.']
+  genres varchar [note: 'Embedded array. Each genre is at most 40 characters.']
+  description varchar(4000)
+  coverUrl varchar(2048) [note: 'Link to cover art hosted elsewhere. The image is not stored.']
+  releaseDate datetime
+  createdAt datetime [not null]
+  updatedAt datetime [not null]
+}
+
+Table UserGame {
+  _id objectid [pk, note: 'MongoDB ObjectId. Collection: usergames. One library entry.']
+  user objectid [not null, ref: > User._id]
+  game objectid [not null, ref: > Game._id]
+  status library_status [not null, default: 'next']
+  rating integer [note: 'Optional personal score from 1 to 10.']
+  notes varchar(1000)
+  startedAt datetime
+  completedAt datetime
+  createdAt datetime [not null]
+  updatedAt datetime [not null]
+
+  indexes {
+    (user, game) [unique, note: 'A game appears at most once in a user\'s library.']
+  }
+}
+
+Table WishlistItem {
+  _id objectid [pk, note: 'MongoDB ObjectId. Collection: wishlistitems']
+  user objectid [not null, ref: > User._id]
+  game objectid [not null, ref: > Game._id]
+  createdAt datetime [not null]
+  updatedAt datetime [not null]
+
+  indexes {
+    (user, game) [unique, note: 'A game appears at most once on a user\'s wishlist.']
+  }
+}
+
+Table Follow {
+  _id objectid [pk, note: 'MongoDB ObjectId. Collection: follows. One direction only.']
+  follower objectid [not null, ref: > User._id]
+  following objectid [not null, ref: > User._id]
+  createdAt datetime [not null]
+  updatedAt datetime [not null]
+
+  indexes {
+    (follower, following) [unique, note: 'A user can follow another user only once.']
+    (following, createdAt) [note: 'Supports "who follows this user?" newest first.']
+  }
+}
+
+Table Post {
+  _id objectid [pk, note: 'MongoDB ObjectId. Collection: posts']
+  author objectid [not null, ref: > User._id]
+  content varchar(2000) [not null]
+  game objectid [ref: > Game._id, note: 'Optional. The catalog game this post is about.']
+  createdAt datetime [not null]
+  updatedAt datetime [not null]
+
+  indexes {
+    (author, createdAt) [note: 'Supports the feed and profile, newest first.']
+  }
+}
