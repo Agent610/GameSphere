@@ -55,8 +55,8 @@ The full backend guide, covering configuration, every API route, the data model,
 
 GameSphere is currently in the initial development and planning stage. Features and implementation details will evolve as the team collaborates on the application.
 
-- **Backend:** the API for accounts, the game catalog, libraries, wishlists, follows, posts, and the feed is implemented and tested.
-- **Frontend:** the login and registration forms exist but are not yet connected to the API. The feed, profile, game list, and news components are still to be built.
+- **Backend:** the API for accounts, the game catalog, libraries, wishlists, follows, posts, the feed, and official gaming news is implemented and tested. It is not deployed yet.
+- **Frontend:** the login and registration forms exist but are not yet connected to the API. The feed, profile, game list, and news components are still to be built. The work is listed task by task in [client/TASKS.md](client/TASKS.md).
 
 ## Vision
 

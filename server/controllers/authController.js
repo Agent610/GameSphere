@@ -166,10 +166,15 @@ export async function register(request, response) {
 }
 
 // POST /api/auth/login
-// Body: { email, password }
+// Body: { email, password }. The email may be sent as `name` instead, because
+// that is what the email input in client/src/pages/Login/Login.jsx is called.
 // Responds 200 with { token, user }.
 export async function login(request, response) {
-  const email = requireText(request.body.email, "email", 254).toLowerCase();
+  const email = requireText(
+    request.body.email ?? request.body.name,
+    "email",
+    254,
+  ).toLowerCase();
   const password = requirePassword(request.body.password);
   if (!validator.isEmail(email)) {
     throw new ApiError(400, "INVALID_EMAIL", "Provide a valid email address");

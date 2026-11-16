@@ -112,6 +112,13 @@ dbTest("register, login, and read the current account", async () => {
   assert.equal(me.status, 200);
   assert.equal(me.body.user._id, account.user._id);
 
+  // The login form's email input is called "name", so that works too.
+  const formLogin = await api("POST", "/api/auth/login", {
+    body: { name: "flow@example.com", password: "correct horse battery" },
+  });
+  assert.equal(formLogin.status, 200);
+  assert.equal(formLogin.body.user._id, account.user._id);
+
   const wrong = await api("POST", "/api/auth/login", {
     body: { email: "flow@example.com", password: "not the password" },
   });

@@ -19,6 +19,19 @@ import errorMiddleware from "./middleware/errorMiddleware.js";
 
 const app = express();
 
+// --- Running behind a proxy -------------------------------------------------
+// Hosting services put a proxy in front of the app, so every request appears to
+// come from the proxy's IP address. That would make all users share one login
+// rate limit. TRUST_PROXY tells Express how many proxies to look past to find
+// the real address (1 on most hosts). Leave it unset on your own machine.
+if (process.env.TRUST_PROXY) {
+  const hops = Number(process.env.TRUST_PROXY);
+  app.set(
+    "trust proxy",
+    Number.isInteger(hops) ? hops : process.env.TRUST_PROXY,
+  );
+}
+
 // --- Security headers -------------------------------------------------------
 // helmet sets a group of HTTP response headers that switch on browser
 // protections (for example, forbidding the API from being embedded in a frame).
