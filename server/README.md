@@ -10,7 +10,7 @@ It provides:
 - **Wishlist** – games a user wants to play or buy
 - **Follows** – follow other users
 - **Posts and feed** – write posts and see posts from the people you follow
-- **News** – gaming news fetched from an outside provider (not chosen yet)
+- **News** – official gaming news from the PlayStation, Xbox, and Steam blogs
 
 ## Contents
 
@@ -24,6 +24,7 @@ It provides:
 - [Data model](#data-model)
 - [Tests](#tests)
 - [Connecting the React client](#connecting-the-react-client)
+- [Deployment](#deployment)
 - [Security measures](#security-measures)
 - [Known limitations](#known-limitations)
 
@@ -65,6 +66,7 @@ curl http://localhost:3000/api/health
 | `npm run dev` | Starts the server and restarts it whenever a file changes |
 | `npm start`   | Starts the server once (for deployment)                   |
 | `npm test`    | Runs the tests                                            |
+| `npm run seed` | Adds ten sample games to the catalog (safe to run again) |
 
 ## Configuration
 
@@ -78,8 +80,8 @@ Settings are read from `server/.env`. That file is ignored by Git, so each devel
 | `CLIENT_ORIGIN`       | No       | `http://localhost:5173` | Browser origins allowed to call the API, comma-separated                |
 | `JWT_EXPIRES_IN`      | No       | `7d`                    | How long a login token lasts (for example `1h` or `7d`)                 |
 | `AUTH_RATE_LIMIT_MAX` | No       | `20`                    | Login/register attempts allowed per IP address every 15 minutes         |
-| `NEWS_API_URL`        | No       | –                       | News provider endpoint; `GET /api/news` returns 503 until this is set   |
-| `NEWS_API_KEY`        | No       | –                       | Sent to the news provider as `Authorization: Bearer <key>` when set     |
+| `NEWS_FEED_URLS`      | No       | Official platform blogs | RSS feeds read by `GET /api/news`, comma-separated                      |
+| `TRUST_PROXY`         | No       | –                       | Deployment only: number of proxies in front of the app (usually `1`)    |
 
 The server refuses to start if `MONGODB_URI` is missing or `JWT_SECRET` is shorter than 32 characters.
 
@@ -99,7 +101,7 @@ server/
 │   ├── rateLimiter.js       Limits login/register attempts
 │   └── errorMiddleware.js   Turns every error into a JSON response
 ├── services/
-│   └── newsService.js       Fetches and tidies news from the outside provider
+│   └── newsService.js       Fetches gaming news from RSS feeds and tidies it
 ├── utils/           Small shared helpers (validation, pagination, constants)
 └── test/            Automated tests
 ```
@@ -164,7 +166,7 @@ General rules:
 | Method      | Path                 | Body                                                               | Success response        |
 | ----------- | -------------------- | ------------------------------------------------------------------ | ----------------------- |
 | `POST`      | `/api/auth/register` | `firstName`, `lastName`, `email`, `password`, `platform`, `username`? | `201` `{ token, user }` |
-| `POST`      | `/api/auth/login`    | `email`, `password`                                                | `200` `{ token, user }` |
+| `POST`      | `/api/auth/login`    | `email` (or `name`), `password`                                    | `200` `{ token, user }` |
 | `GET` 🔒    | `/api/auth/me`       | –                                                                  | `200` `{ user }`        |
 | `GET`       | `/api/users/:userId` | –                                                                  | `200` `{ user }`        |
 | `PATCH` 🔒  | `/api/users/me`      | Any of `firstName`, `lastName`, `platform`, `username`             | `200` `{ user }`        |
@@ -282,9 +284,11 @@ curl -X POST http://localhost:3000/api/me/games \
 | ------ | ----------- | ----------------- |
 | `GET`  | `/api/news` | `200` `{ items }` |
 
-Each item has `title` and `url`, plus `summary`, `imageUrl`, `publishedAt`, and `source` when the provider supplies them.
+No token is needed. Each item has `title`, `url`, and `source`, plus `summary` (plain text, at most 280 characters), `imageUrl`, and `publishedAt` when the feed supplies them. Items are sorted newest first and capped at 30.
 
-No news provider has been chosen yet, so this returns `503 NEWS_PROVIDER_NOT_CONFIGURED` until `NEWS_API_URL` is set. The provider must respond with JSON that is either an array of articles or an object with the array under `articles` or `items`. Each article needs a `title` and a `url` (or `link`).
+The news comes from the official RSS feeds of the PlayStation Blog, Xbox Wire, and Steam, which need no API key. Nintendo publishes no official feed. Set `NEWS_FEED_URLS` to use a different list of RSS feeds.
+
+Results are kept in memory for 10 minutes, so the blogs are not contacted on every request. If one feed fails, the others are still returned. If all fail, the last good result is reused; with none to reuse, the response is `502` or `504 NEWS_PROVIDER_ERROR`.
 
 ### Pagination
 
@@ -324,8 +328,8 @@ Use `code` in client logic, because it will not change. `message` is a readable 
 | `413`  | `PAYLOAD_TOO_LARGE`                                                     | The request body is over 1 MB                                    |
 | `429`  | `RATE_LIMITED`                                                          | Too many login or register attempts                              |
 | `500`  | `INTERNAL_ERROR`                                                        | A bug or outage on the server; details are in the server log     |
-| `502`, `504` | `NEWS_PROVIDER_ERROR`                                             | The news provider failed or timed out                            |
-| `503`  | `NEWS_PROVIDER_NOT_CONFIGURED`                                          | `NEWS_API_URL` is not set or not valid                           |
+| `502`, `504` | `NEWS_PROVIDER_ERROR`                                             | Every news feed failed or timed out                              |
+| `503`  | `NEWS_PROVIDER_NOT_CONFIGURED`                                          | `NEWS_FEED_URLS` is set but is not a list of HTTPS URLs          |
 
 ## Data model
 
@@ -359,7 +363,7 @@ The tests use Node's built-in test runner, so there is nothing extra to install.
 
 | File                            | Covers                                                                      | Needs MongoDB |
 | ------------------------------- | --------------------------------------------------------------------------- | ------------- |
-| `test/app.test.js`              | Routing, input validation, and the token check                              | No            |
+| `test/app.test.js`              | Routing, input validation, the token check, and news feed conversion        | No            |
 | `test/api.integration.test.js`  | Full flows: sign-up, login, profiles, library, wishlist, follows, feed, account deletion | Yes |
 
 The integration tests create a temporary database with a unique name and delete it when they finish, so they never touch your development data. They connect to MongoDB on your machine by default; set `MONGODB_TEST_URI` to use a different server. If MongoDB cannot be reached, they are skipped and the remaining tests still run.
@@ -370,8 +374,29 @@ The client does not call the API yet. When wiring it up:
 
 - **Base URL** – the API runs at `http://localhost:3000` in development. CORS already allows the Vite dev server at `http://localhost:5173`.
 - **Register** – the field names in `client/src/pages/Register/Register.jsx` already match what `POST /api/auth/register` expects.
-- **Login** – `POST /api/auth/login` expects `email`, but the email input in `client/src/pages/Login/Login.jsx` is currently named `name`. Rename it, or map it when building the request.
+- **Login** – the email input in `client/src/pages/Login/Login.jsx` is named `name`, so `POST /api/auth/login` accepts the email as either `name` or `email`. The form's values can be sent as they are.
+- **News** – `GET /api/news` needs no token and returns articles ready to display.
 - **After login** – keep the returned `token` and send it as `Authorization: Bearer <token>` on protected requests. Use `GET /api/auth/me` to restore the signed-in user after a page refresh.
+
+## Deployment
+
+The API has not been deployed yet. It runs on any Node.js host (Render, Railway, Fly.io, a virtual machine). Whichever the team picks, the steps are the same:
+
+1. **Database** – create a free [MongoDB Atlas](https://www.mongodb.com/atlas) cluster, add a database user, allow the host's IP addresses under Network Access, and copy the connection string.
+2. **Service** – point the host at this repository with `server` as the root directory, `npm install` as the build command, and `npm start` as the start command. Use `/api/health` as the health check path.
+3. **Environment variables** – set these on the host (there is no `.env` file in production):
+
+   | Variable        | Value                                                               |
+   | --------------- | ------------------------------------------------------------------- |
+   | `MONGODB_URI`   | The Atlas connection string                                         |
+   | `JWT_SECRET`    | A new random secret; do not reuse the one from your own `.env`      |
+   | `CLIENT_ORIGIN` | The deployed client's URL, for example `https://gamesphere.example` |
+   | `TRUST_PROXY`   | `1`                                                                 |
+
+   Most hosts set `PORT` themselves, and the server already reads it.
+
+4. **Sample data** – to fill the deployed catalog, run `npm run seed` on your own machine with `MONGODB_URI` temporarily set to the Atlas connection string.
+5. **Client** – the React app then needs the deployed API's URL instead of `http://localhost:3000`.
 
 ## Security measures
 
@@ -390,7 +415,6 @@ The client does not call the API yet. When wiring it up:
 - **No password reset, email verification, or password change.**
 - **No logout endpoint.** A token stays valid until it expires or the account is deleted.
 - **Library, wishlist, and follower lists are not paginated.** They return everything.
-- **News is not cached.** Each `GET /api/news` calls the provider, which may matter for providers with request quotas.
 - **Likes, comments, and gaming-channel accounts** from the project vision are not built yet.
-- **Rate limiting behind a proxy.** Attempts are counted per IP address. On a host that puts a proxy in front of the app (most do), Express's [`trust proxy`](https://expressjs.com/en/guide/behind-proxies.html) setting must be configured, or all users will share one limit.
+- **Rate limiting behind a proxy.** Attempts are counted per IP address. On a host that puts a proxy in front of the app (most do), set `TRUST_PROXY` (see [Deployment](#deployment)), or all users will share one limit.
 - **Development dependency advisory.** `npm audit` reports two moderate issues in `nodemon`, which is used only by `npm run dev`. The packages the running server depends on have none.
