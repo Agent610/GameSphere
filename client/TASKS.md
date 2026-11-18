@@ -40,10 +40,11 @@ Check it works by opening <http://localhost:3000/api/games> in a browser. You sh
 
 `handleRegister` and `handleLogin` in `src/components/App/App.jsx` currently only show a "validated" message.
 
-- [ ] **Register:** send the form's values to `POST /api/auth/register`. The input names already match what the API expects (`firstName`, `lastName`, `platform`, `email`, `password`), so `Object.fromEntries(new FormData(event.target))` gives you the request body.
-- [ ] **Login:** send the form's values to `POST /api/auth/login`. The email input is named `name`, and the API accepts that as it is, so no renaming is needed.
-- [ ] Both respond with `{ token, user }`. Keep both in state and save the token in `localStorage`.
-- [ ] Show the API's `error.message` when a request fails. The ones you will meet most: `INVALID_CREDENTIALS` (wrong email or password), `ACCOUNT_EXISTS` (email already registered), `WEAK_PASSWORD`, and `RATE_LIMITED` (too many attempts).
+<!-- - [DB] **Register:** send the form's values to `POST /api/auth/register`. The input names already match what the API expects (`firstName`, `lastName`, `platform`, `email`, `password`), so `Object.fromEntries(new FormData(event.target))` gives you the request body. -->
+<!-- - [DB] **Login:** send the form's values to `POST /api/auth/login`. The email input is named `name`, and the API accepts that as it is, so no renaming is needed. -->
+<!-- - [DB] Both respond with `{ token, user }`. Keep both in state and save the token in `localStorage`. -->
+
+<!-- - [DB] Show the API's `error.message` when a request fails. The ones you will meet most: `INVALID_CREDENTIALS` (wrong email or password), `ACCOUNT_EXISTS` (email already registered), `WEAK_PASSWORD`, and `RATE_LIMITED` (too many attempts). -->
 
 ### 4. Stay signed in, sign out, and move between pages
 

@@ -1,15 +1,10 @@
 import "./Register.css";
 
 function Register({ onBackToLogin, onRegister }) {
-  const platforms = ["PlayStation", "Xbox", "Nintendo", "PC", "Mobile"];
+  const platforms = ["PlayStation", "Xbox", "Nintendo", "PC"];
 
   function handleSubmit(event) {
     event.preventDefault();
-
-    const formData = new FormData(event.currentTarget);
-    const primaryPlatform = formData.get("platform");
-    const secondPlatform = formData.get("secondPlatform");
-
     onRegister(event);
   }
 
