@@ -22,16 +22,19 @@ Check it works by opening <http://localhost:3000/api/games> in a browser. You sh
 
 ## Foundation
 
-### 1. Fix the Login stylesheet import
+<!-- ### 1. Fix the Login stylesheet import
 
-- [ ] The first line of `src/pages/Login/Login.jsx` is `"import ./Login.css";`. The quotes are in the wrong place, so it is a plain string and the stylesheet never loads. Change it to `import "./Login.css";`.
+- [DB] The first line of `src/pages/Login/Login.jsx` is `"import ./Login.css";`. The quotes are in the wrong place, so it is a plain string and the stylesheet never loads. Change it to `import "./Login.css";`. -->
 
 ### 2. Add an API helper
 
-- [ ] Create `src/utils/api.js` with one function that every component uses to call the server, so the base URL and token handling live in one place.
-- [ ] Read the base URL from `import.meta.env.VITE_API_URL`, falling back to `http://localhost:3000`. This lets the deployed site point at the deployed API later.
-- [ ] Send `Content-Type: application/json` when there is a body, and `Authorization: Bearer <token>` when the user is signed in.
-- [ ] When the response is not OK, throw an error carrying the API's `error.code` and `error.message`. Every API error has the shape `{ "error": { "code": "...", "message": "..." } }`. A `204` response has no body, so do not try to parse one.
+<!-- - [DB] Create `src/utils/api.js` with one function that every component uses to call the server, so the base URL and token handling live in one place. -->
+
+<!-- - [DB] Read the base URL from `import.meta.env.VITE_API_URL`, falling back to `http://localhost:3000`. This lets the deployed site point at the deployed API later. -->
+
+<!-- - [DB] Send `Content-Type: application/json` when there is a body, and `Authorization: Bearer <token>` when the user is signed in. -->
+
+<!-- - [DB] When the response is not OK, throw an error carrying the API's `error.code` and `error.message`. Every API error has the shape `{ "error": { "code": "...", "message": "..." } }`. A `204` response has no body, so do not try to parse one. -->
 
 ### 3. Connect Register and Login to the API
 
