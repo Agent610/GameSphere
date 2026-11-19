@@ -6,7 +6,6 @@ import apiRequest from "../../utils/api.js";
 import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 
 function App() {
-  const [currentPage, setCurrentPage] = useState("login");
   const [message, setMessage] = useState("");
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
