@@ -1,9 +1,13 @@
 // Loads ten catalog games into MongoDB for local testing.
 //
-// Each game is matched on title. These rows are a fixture, separate from the
-// IGDB import, which matches on igdbId. Running this again updates these ten
-// documents instead of inserting duplicates. Games added any other way are
-// left as they are.
+// Each game is matched on title among games that did not come from IGDB. These
+// rows are a fixture, separate from the IGDB import, which matches on igdbId.
+// Running this again updates these ten documents instead of inserting
+// duplicates. Games added any other way are left as they are.
+//
+// It does nothing when the database already holds the IGDB catalog (such as the
+// shared Atlas database): all ten games are in it, and the seed would only add
+// a second copy of each.
 //
 // Run from server/: npm run seed
 // Requires MONGODB_URI, normally from server/.env (see .env.example).
@@ -21,8 +25,9 @@ const serverRoot = path.resolve(
 );
 dotenv.config({ path: path.join(serverRoot, ".env") });
 
-// Platforms must be values from utils/constants.js. The Game schema rejects
-// anything else. Cover images are linked, not stored, same as the model.
+// Platforms use the five short names from utils/constants.js, which the
+// ?platform= filter matches along with the IGDB names. Cover images are linked,
+// not stored, same as the model.
 const games = [
   {
     title: "Among Us",
@@ -148,8 +153,18 @@ function sameGame(current, game) {
 async function seedGames() {
   await connectDatabase();
 
+  if (await Game.exists({ igdbId: { $exists: true } })) {
+    console.info(
+      "Seed skipped: this database already has the IGDB catalog (npm run sync:games)",
+    );
+    return;
+  }
+
+  // Imported games are never matched, so the seed cannot overwrite one that
+  // shares a title with a fixture.
   const existing = await Game.find({
     title: { $in: games.map((game) => game.title) },
+    igdbId: { $exists: false },
   });
   const byTitle = new Map(existing.map((game) => [game.title, game]));
 
@@ -160,7 +175,7 @@ async function seedGames() {
   for (const game of games) {
     const current = byTitle.get(game.title);
     if (!current) {
-      // create() runs the Game schema validators, including the platform enum.
+      // create() runs the Game schema validators.
       await Game.create(game);
       inserted += 1;
     } else if (sameGame(current, game)) {

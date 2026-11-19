@@ -38,9 +38,43 @@ const GAME_FIELDS = [
   "genres.name",
   "platforms.name",
   "total_rating",
+  "total_rating_count",
   "updated_at",
   "url",
 ].join(",");
+
+// Fields toGameDocument leaves out when IGDB has no value. A re-run removes them
+// from stored games too, so a cover or rating IGDB has since dropped does not
+// linger.
+const OPTIONAL_FIELDS = [
+  "description",
+  "coverUrl",
+  "releaseDate",
+  "totalRating",
+  "totalRatingCount",
+  "igdbUpdatedAt",
+  "igdbUrl",
+];
+
+// The MongoDB update that makes a stored game match `document`.
+export function toUpsert(document, now) {
+  const unset = Object.fromEntries(
+    OPTIONAL_FIELDS.filter((field) => !(field in document)).map((field) => [
+      field,
+      "",
+    ]),
+  );
+  const update = {
+    $set: { ...document, updatedAt: now },
+    $setOnInsert: { createdAt: now },
+  };
+  if (Object.keys(unset).length > 0) {
+    update.$unset = unset;
+  }
+  return {
+    updateOne: { filter: { igdbId: document.igdbId }, update, upsert: true },
+  };
+}
 
 function coverUrl(imageId) {
   if (typeof imageId !== "string" || imageId.length === 0) {
@@ -97,6 +131,9 @@ export function toGameDocument(igdbGame, mobilePlatforms) {
   }
   if (typeof igdbGame.total_rating === "number") {
     document.totalRating = Math.min(100, Math.max(0, igdbGame.total_rating));
+  }
+  if (typeof igdbGame.total_rating_count === "number") {
+    document.totalRatingCount = Math.max(0, igdbGame.total_rating_count);
   }
   if (typeof igdbGame.updated_at === "number") {
     document.igdbUpdatedAt = new Date(igdbGame.updated_at * 1000);
@@ -174,7 +211,8 @@ async function syncGames() {
   let afterId = optionalNumber("IGDB_AFTER_ID") ?? 0;
 
   await connectDatabase();
-  // Replaces the old unique index on title. Imported games may share a name.
+  // Builds the indexes in models/Game.js, and drops the old unique index on
+  // title. Imported games may share a name.
   await Game.syncIndexes();
 
   const mobilePlatforms = await mobilePlatformNames(igdb);
@@ -223,16 +261,7 @@ async function syncGames() {
     if (documents.length > 0) {
       const now = new Date();
       const result = await Game.bulkWrite(
-        documents.map((document) => ({
-          updateOne: {
-            filter: { igdbId: document.igdbId },
-            update: {
-              $set: { ...document, updatedAt: now },
-              $setOnInsert: { createdAt: now },
-            },
-            upsert: true,
-          },
-        })),
+        documents.map((document) => toUpsert(document, now)),
         { ordered: false },
       );
       stored += documents.length;

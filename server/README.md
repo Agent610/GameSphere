@@ -41,7 +41,7 @@ cp .env.example .env
 
 Open `.env` and set two values:
 
-- `MONGODB_URI` – your MongoDB connection string. The default works for a local install.
+- `MONGODB_URI` – your MongoDB connection string. The team's shared Atlas database already holds the full IGDB game catalog; ask a backend teammate for its connection string. The default (`mongodb://127.0.0.1:27017/gamesphere`) is an empty local database instead.
 - `JWT_SECRET` – a long random string. Generate one with:
 
   ```sh
@@ -66,7 +66,8 @@ curl http://localhost:3000/api/health
 | `npm run dev` | Starts the server and restarts it whenever a file changes |
 | `npm start`   | Starts the server once (for deployment)                   |
 | `npm test`    | Runs the tests                                            |
-| `npm run seed` | Adds ten sample games to the catalog (safe to run again) |
+| `npm run seed` | Adds ten sample games to an empty local catalog (safe to run again; does nothing once the IGDB catalog is loaded) |
+| `npm run sync:games` | Copies the IGDB game catalog into the database, or updates it (needs the Twitch variables below) |
 
 ## Configuration
 
@@ -82,6 +83,8 @@ Settings are read from `server/.env`. That file is ignored by Git, so each devel
 | `AUTH_RATE_LIMIT_MAX` | No       | `20`                    | Login/register attempts allowed per IP address every 15 minutes         |
 | `NEWS_FEED_URLS`      | No       | Official platform blogs | RSS feeds read by `GET /api/news`, comma-separated                      |
 | `TRUST_PROXY`         | No       | –                       | Deployment only: number of proxies in front of the app (usually `1`)    |
+| `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET` | For `sync:games` | – | Credentials of a Twitch developer app, used to read IGDB. The API server itself does not need them |
+| `IGDB_AFTER_ID`, `IGDB_SYNC_LIMIT` | No | – | `sync:games` only: resume after this IGDB id, or stop after this many games |
 
 The server refuses to start if `MONGODB_URI` is missing or `JWT_SECRET` is shorter than 32 characters.
 
@@ -223,12 +226,20 @@ Following someone you already follow, or unfollowing someone you do not follow, 
 
 | Method    | Path                 | Body / query                                                                  | Success response                 |
 | --------- | -------------------- | ----------------------------------------------------------------------------- | -------------------------------- |
-| `GET`     | `/api/games`         | Query: `q`, `platform`, `page`, `limit`                                       | `200` `{ games, pagination }`    |
+| `GET`     | `/api/games`         | Query: `q`, `platform`, `genre`, `sort`, `page`, `limit`                      | `200` `{ games, pagination }`    |
+| `GET`     | `/api/games/genres`  | –                                                                             | `200` `{ genres }`               |
 | `GET`     | `/api/games/:gameId` | –                                                                             | `200` `{ game }`                 |
 | `POST` 🔒 | `/api/games`         | `title`, and optionally `platforms`, `genres`, `description`, `coverUrl`, `releaseDate` | `201` `{ game }`       |
 
-- `q` searches game titles, ignoring case. `platform` keeps only games available on that platform.
-- `platforms` and `genres` are arrays of strings. `coverUrl` must be an `http` or `https` URL. Titles must be unique.
+The catalog is imported from [IGDB](https://www.igdb.com/) with `npm run sync:games`: about 313,000 games, without mobile-only titles and DLC.
+
+- `q` finds games whose title has a word starting with that text, ignoring case: `halo` finds *Halo 3* but not *Chalo Chalo*.
+- `platform` is one of the five register-form platforms (`PlayStation`, `Xbox`, `Nintendo`, `PC`, `Mobile`), which covers all of that family's consoles (`PlayStation` includes PS1 to PS5, PSP, and Vita). An exact IGDB platform name such as `PlayStation 2` also works. The full mapping is `PLATFORM_GROUPS` in `utils/constants.js`.
+- `genre` is one name from `GET /api/games/genres`, such as `Shooter` or `Role-playing (RPG)`.
+- `sort` is `popular` (default: most rated on IGDB first), `newest` (released games, latest first), or `title` (A to Z). Any other value is `400 INVALID_SORT`.
+- The list leaves out each game's `description` to keep pages small. `GET /api/games/:gameId` includes it.
+- Imported games also have `totalRating` (0 to 100), `totalRatingCount`, `igdbId`, and `igdbUrl`. Any of these, and `coverUrl`, `releaseDate`, and `description`, can be missing: about 40,000 games have no cover.
+- When adding a game, `platforms` uses the same names as the `platform` filter, and `genres` is an array of strings. `coverUrl` must be an `http` or `https` URL. Titles do not have to be unique.
 
 ### Library 🔒
 
@@ -318,6 +329,7 @@ Use `code` in client logic, because it will not change. `message` is a readable 
 | `400`  | `INVALID_ID`                                                            | An id is not a valid ObjectId                                    |
 | `400`  | `INVALID_EMAIL`, `WEAK_PASSWORD`, `INVALID_USERNAME`, `INVALID_PLATFORM` | A registration or profile field breaks its rule                  |
 | `400`  | `INVALID_PLATFORMS`, `INVALID_GENRES`, `INVALID_COVER_URL`              | A catalog game field breaks its rule                             |
+| `400`  | `INVALID_SORT`                                                          | `sort` on `GET /api/games` is not `popular`, `newest`, or `title` |
 | `400`  | `INVALID_FOLLOW`                                                        | You tried to follow yourself                                     |
 | `401`  | `UNAUTHENTICATED`                                                       | The token is missing, invalid, expired, or its account is gone   |
 | `401`  | `INVALID_CREDENTIALS`                                                   | Wrong email or password                                          |
@@ -345,7 +357,7 @@ User ──< Post ──(optional)── Game a post, optionally about a game
 | Model          | Fields                                                                                  | Rules                                          |
 | -------------- | --------------------------------------------------------------------------------------- | ---------------------------------------------- |
 | `User`         | `username`, `firstName`, `lastName`, `email`, `passwordHash`, `platform`                | `username` and `email` are unique              |
-| `Game`         | `title`, `platforms[]`, `genres[]`, `description`, `coverUrl`, `releaseDate`            | `title` is unique                              |
+| `Game`         | `igdbId`, `title`, `platforms[]`, `genres[]`, `description`, `coverUrl`, `releaseDate`, `totalRating`, `totalRatingCount` | `igdbId` is unique; titles can repeat |
 | `UserGame`     | `user`, `game`, `status`, `rating`, `notes`, `startedAt`, `completedAt`                 | One per user and game                          |
 | `WishlistItem` | `user`, `game`                                                                          | One per user and game                          |
 | `Follow`       | `follower`, `following`                                                                 | One per pair of users                          |
@@ -395,7 +407,7 @@ The API has not been deployed yet. It runs on any Node.js host (Render, Railway,
 
    Most hosts set `PORT` themselves, and the server already reads it.
 
-4. **Sample data** – to fill the deployed catalog, run `npm run seed` on your own machine with `MONGODB_URI` temporarily set to the Atlas connection string.
+4. **Game catalog** – to fill the deployed catalog, run `npm run sync:games` on your own machine with `MONGODB_URI` temporarily set to the Atlas connection string and the Twitch variables set. If the deployment uses the team's shared Atlas database, the catalog is already there.
 5. **Client** – the React app then needs the deployed API's URL instead of `http://localhost:3000`.
 
 ## Security measures

@@ -5,7 +5,7 @@ import { getNews } from "../controllers/newsController.js";
 
 const router = express.Router();
 
-// Public. The news provider's API key stays on the server (see newsService.js).
+// Public. The server reads the feeds and caches them (see newsService.js).
 router.get("/", getNews);
 
 export default router;

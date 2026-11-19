@@ -301,3 +301,98 @@ dbTest("deleting an account removes its data and invalidates its token", async (
   const following = await api("GET", `/api/users/${staying.user._id}/following`);
   assert.equal(following.body.users.length, 0);
 });
+
+dbTest("the catalog searches, filters, and sorts imported games", async () => {
+  const { Game } = await import("../models/Game.js");
+  await Game.insertMany([
+    {
+      igdbId: 101,
+      title: "Halo 3",
+      platforms: ["Xbox 360"],
+      genres: ["Shooter"],
+      description: "Finish the fight.",
+      releaseDate: new Date("2007-09-25"),
+      totalRating: 88,
+      totalRatingCount: 1500,
+    },
+    {
+      igdbId: 102,
+      title: "Halo Obscure",
+      platforms: ["PC (Microsoft Windows)"],
+      genres: ["Shooter"],
+      releaseDate: new Date("2015-01-01"),
+      totalRating: 100,
+      totalRatingCount: 1,
+    },
+    {
+      igdbId: 103,
+      title: "Chalo Chalo",
+      platforms: ["PlayStation 5"],
+      genres: ["Racing"],
+      releaseDate: new Date("2020-01-01"),
+    },
+    {
+      igdbId: 104,
+      title: "Halo Future",
+      platforms: ["Xbox Series X|S"],
+      genres: ["Shooter"],
+      releaseDate: new Date("2999-01-01"),
+    },
+  ]);
+
+  const titles = (body) => body.games.map((game) => game.title);
+
+  // Most-rated first, so one perfect rating does not beat 1,500 good ones.
+  const search = await api("GET", "/api/games?q=halo");
+  assert.equal(search.status, 200);
+  assert.deepEqual(titles(search.body), [
+    "Halo 3",
+    "Halo Obscure",
+    "Halo Future",
+  ]);
+  assert.equal(search.body.pagination.total, 3);
+  assert.equal(search.body.games[0].description, undefined);
+
+  const xbox = await api("GET", "/api/games?platform=Xbox&sort=title");
+  assert.deepEqual(titles(xbox.body), ["Halo 3", "Halo Future"]);
+
+  const playstation = await api("GET", "/api/games?platform=PlayStation");
+  assert.deepEqual(titles(playstation.body), ["Chalo Chalo"]);
+
+  const exact = await api("GET", "/api/games?platform=Xbox%20360");
+  assert.deepEqual(titles(exact.body), ["Halo 3"]);
+
+  const racing = await api("GET", "/api/games?genre=Racing");
+  assert.deepEqual(titles(racing.body), ["Chalo Chalo"]);
+
+  // Unreleased games are left out of "newest".
+  const newest = await api("GET", "/api/games?q=halo&sort=newest");
+  assert.deepEqual(titles(newest.body), ["Halo Obscure", "Halo 3"]);
+
+  const badSort = await api("GET", "/api/games?sort=random");
+  assert.equal(badSort.status, 400);
+  assert.equal(badSort.body.error.code, "INVALID_SORT");
+
+  const genres = await api("GET", "/api/games/genres");
+  assert.equal(genres.status, 200);
+  assert.ok(genres.body.genres.includes("Racing"));
+  assert.ok(genres.body.genres.includes("Shooter"));
+
+  const one = await api("GET", `/api/games/${search.body.games[0]._id}`);
+  assert.equal(one.body.game.description, "Finish the fight.");
+
+  // A game added by a user can use an IGDB platform name, and is then found by
+  // that platform's group.
+  const { token } = await createAccount();
+  const added = await api("POST", "/api/games", {
+    token,
+    body: { title: "Halo Fan Remake", platforms: ["PlayStation 4"] },
+  });
+  assert.equal(added.status, 201);
+  const unknown = await api("POST", "/api/games", {
+    token,
+    body: { title: "Nowhere", platforms: ["Toaster"] },
+  });
+  assert.equal(unknown.status, 400);
+  assert.equal(unknown.body.error.code, "INVALID_PLATFORMS");
+});

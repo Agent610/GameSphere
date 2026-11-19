@@ -5,6 +5,7 @@ import {
   createGame,
   getGame,
   listGames,
+  listGenres,
 } from "../controllers/gameController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
 
@@ -13,6 +14,8 @@ const router = express.Router();
 // Anyone can browse the catalog; adding a game requires a token.
 router.get("/", listGames);
 router.post("/", authMiddleware, createGame);
+// Must come before /:gameId, or "genres" would be read as a game id.
+router.get("/genres", listGenres);
 router.get("/:gameId", getGame);
 
 export default router;
