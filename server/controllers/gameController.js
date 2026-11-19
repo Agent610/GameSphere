@@ -103,7 +103,7 @@ export async function createGame(request, response) {
   }
 
   // The remaining fields (description, releaseDate) are checked by the Game
-  // schema. A duplicate title fails its unique index and becomes a 409 CONFLICT.
+  // schema. Titles may repeat; IGDB is what makes an imported game unique.
   const game = await Game.create({
     title,
     platforms: gamePlatforms,

@@ -1,30 +1,39 @@
 // A game in the shared catalog. There is one document per game for the whole
 // site; users reference it from their library (UserGame), wishlist
 // (WishlistItem), and posts (Post).
+//
+// Catalog rows imported from IGDB are identified by igdbId. Titles are not
+// unique: IGDB has many games that share a name.
 
 import mongoose from "mongoose";
-import { PLATFORMS } from "../utils/constants.js";
 
 const { Schema, model } = mongoose;
 
 const gameSchema = new Schema(
   {
-    // `unique` stops the same game being added to the catalog twice. It also
-    // creates the index that makes sorting and searching by title fast.
+    // Present on games imported from IGDB. Absent on the hand-written seed.
+    // Sparse so those seed documents can share the collection.
+    igdbId: { type: Number, unique: true, sparse: true },
     title: {
       type: String,
       required: true,
       trim: true,
-      maxlength: 120,
-      unique: true,
+      maxlength: 500,
+      index: true,
     },
-    // Platforms the game is available on.
-    platforms: [{ type: String, enum: PLATFORMS }],
-    genres: [{ type: String, trim: true, maxlength: 40 }],
-    description: { type: String, trim: true, maxlength: 4000 },
+    // IGDB's own platform names, such as "PlayStation 2". A person's preferred
+    // platform (PlayStation, Xbox, Nintendo, PC, Mobile) lives on User instead.
+    platforms: [{ type: String, trim: true, maxlength: 80 }],
+    genres: [{ type: String, trim: true, maxlength: 80 }],
+    description: { type: String, trim: true, maxlength: 8000 },
     // Link to cover art hosted elsewhere; images are not stored in the database.
     coverUrl: { type: String, trim: true, maxlength: 2048 },
     releaseDate: Date,
+    // IGDB's combined player and critic score, from 0 to 100.
+    totalRating: { type: Number, min: 0, max: 100 },
+    // When IGDB last changed this game. A later sync can skip unchanged rows.
+    igdbUpdatedAt: Date,
+    igdbUrl: { type: String, trim: true, maxlength: 2048 },
   },
   { timestamps: true },
 );
