@@ -1,0 +1,78 @@
+/*Desktop*/
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 16px 32px;
+  background-color: #171923;
+  color: #ffffff;
+}
+
+.header-brand {
+  color: #ffffff;
+  font-size: 24px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.header-nav {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.header-nav a {
+  color: #cbd5e0;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.header-nav a:hover,
+.header-nav a.active {
+  color: #805ad5;
+}
+
+.header-user {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.header-user span {
+  font-weight: 500;
+}
+
+.header-user button {
+  padding: 9px 16px;
+  border: none;
+  border-radius: 6px;
+  background-color: #805ad5;
+  color: #ffffff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.header-user button:hover {
+  background-color: #6b46c1;
+}
+
+/*Mobile*/
+@media (max-width: 425px) {
+  .header {
+    flex-wrap: wrap;
+    padding: 16px;
+  }
+
+  .header-nav {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+    gap: 18px;
+  }
+
+  .header-user {
+    gap: 8px;
+  }
+}

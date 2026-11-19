@@ -4,6 +4,7 @@ import Register from "../../pages/Register/Register.jsx";
 import "./App.css";
 import apiRequest from "../../utils/api.js";
 import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import Header from "../Header/Header.jsx";
 
 function App() {
   const [message, setMessage] = useState("");
@@ -144,11 +145,15 @@ function App() {
           path="/"
           element={
             user ? (
-              <main>
-                <h1>Welcome to GameSphere, {user.firstName}!</h1>
-                <p>You are now successfully signed in.</p>
-                <button onClick={handleLogout}>Sign Out</button>
-              </main>
+              <>
+                <Header user={user} onLogout={handleLogout} />
+
+                <main>
+                  <h1>Welcome to GameSphere, {user.firstName}!</h1>
+                  <p>You are now successfully signed in.</p>
+                  <button onClick={handleLogout}>Sign Out</button>
+                </main>
+              </>
             ) : (
               <Navigate to="/login" replace />
             )

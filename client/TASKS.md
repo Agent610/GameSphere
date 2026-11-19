@@ -59,19 +59,20 @@ Check it works by opening <http://localhost:3000/api/games> in a browser. You sh
 
 Files: `src/components/Header/`, `src/components/Footer/` (both empty).
 
-- [1 ] Header: the GameSphere name, links to Feed, Games, and Profile, the signed-in user's name, and a sign-out button.
-- [2 ] Footer: the project name and the four contributors.
-- [3 ] Show both on every page except Login and Register.
+<!-- - [DB] Header: the GameSphere name, links to Feed, Games, and Profile, the signed-in user's name, and a sign-out button. -->
+
+- [2 DB] Footer: the project name and the four contributors.
+- [3 DB] Show both on every page except Login and Register.
 
 ### 6. Game catalog: GameList and GameCard
 
 Files: `src/components/GameList/`, `src/components/GameCard/` (both empty).
 
-- [4 ] GameCard shows one game: cover image (`coverUrl`), `title`, `platforms`, and `genres`. Some games have no cover, so give the card a placeholder.
-- [5 ] GameList loads `GET /api/games` and renders a GameCard for each game in `games`.
-- [6 ] Add a search box (`?q=zelda`) and a platform filter (`?platform=PC`). The platform values are the same five as on the Register form.
-- [7 ] Add paging with `?page=2&limit=20`. The response includes `pagination: { page, limit, total }`.
-- [8 ] Add two buttons to each card:
+- [4 JS] GameCard shows one game: cover image (`coverUrl`), `title`, `platforms`, and `genres`. Some games have no cover, so give the card a placeholder.
+- [5 JS] GameList loads `GET /api/games` and renders a GameCard for each game in `games`.
+- [6 JS] Add a search box (`?q=zelda`) and a platform filter (`?platform=PC`). The platform values are the same five as on the Register form.
+- [7 JS] Add paging with `?page=2&limit=20`. The response includes `pagination: { page, limit, total }`.
+- [8 JS] Add two buttons to each card:
   - "Add to library" calls `POST /api/me/games` with `{ gameId, status }`, where status is `next`, `playing`, or `completed`.
   - "Add to wishlist" calls `POST /api/me/wishlist` with `{ gameId }`.
   - Both answer `409 CONFLICT` if the game is already there. Show that as "already added", not as a failure.
@@ -80,43 +81,43 @@ Files: `src/components/GameList/`, `src/components/GameCard/` (both empty).
 
 File: `src/components/Profile/` (empty).
 
-- [9 ] Show the signed-in user's name, username, and platform.
-- [10 ] **Library:** load `GET /api/me/games` and show three groups by `status`: Completed, Playing, and Next to Play. Each entry holds the full game under `game`.
-- [11 ] Let the user move a game between groups with `PATCH /api/me/games/:entryId` and `{ status }`, and remove it with `DELETE /api/me/games/:entryId`. Note that `:entryId` is the entry's `_id`, not the game's.
-- [12 ] **Wishlist:** load `GET /api/me/wishlist`, with a remove button calling `DELETE /api/me/wishlist/:itemId`.
-- [13 ] **Edit profile:** a form that sends any of `firstName`, `lastName`, `platform`, `username` to `PATCH /api/users/me`.
-- [14 ] **Other people's profiles** (`/users/:userId`): load `GET /api/users/:userId` and their posts from `GET /api/posts/user/:userId`. Add a Follow button (`POST /api/users/:userId/follow`) that becomes Unfollow (`DELETE` on the same path). To know which to show, check whether the user appears in `GET /api/users/<your id>/following`.
+- [9 DB] Show the signed-in user's name, username, and platform.
+- [10 DB] **Library:** load `GET /api/me/games` and show three groups by `status`: Completed, Playing, and Next to Play. Each entry holds the full game under `game`.
+- [11 DB] Let the user move a game between groups with `PATCH /api/me/games/:entryId` and `{ status }`, and remove it with `DELETE /api/me/games/:entryId`. Note that `:entryId` is the entry's `_id`, not the game's.
+- [12 DB] **Wishlist:** load `GET /api/me/wishlist`, with a remove button calling `DELETE /api/me/wishlist/:itemId`.
+- [13 DB] **Edit profile:** a form that sends any of `firstName`, `lastName`, `platform`, `username` to `PATCH /api/users/me`.
+- [14 DB] **Other people's profiles** (`/users/:userId`): load `GET /api/users/:userId` and their posts from `GET /api/posts/user/:userId`. Add a Follow button (`POST /api/users/:userId/follow`) that becomes Unfollow (`DELETE` on the same path). To know which to show, check whether the user appears in `GET /api/users/<your id>/following`.
 
 ### 8. Feed
 
 File: `src/components/Feed/` (empty).
 
-- [15 ] Load `GET /api/posts/feed` and show each post's `content`, its author's name, and the date. Posts are already sorted newest first and include `author` and, when linked to a game, `game` (`title` and `coverUrl`).
-- [16 ] Add a "new post" box that calls `POST /api/posts` with `{ content }` (1 to 2000 characters) and, optionally, a `gameId`. Put the new post at the top of the list without reloading the page.
-- [17 ] Let authors edit (`PATCH /api/posts/:postId`) and delete (`DELETE /api/posts/:postId`) their own posts. Compare `post.author._id` with the signed-in user's `_id` to decide whether to show the buttons.
-- [18 ] Make each author's name a link to `/users/:userId`.
-- [19 ] A brand-new account follows nobody, so its feed holds only its own posts. Show a friendly message for an empty feed.
+- [15 JS] Load `GET /api/posts/feed` and show each post's `content`, its author's name, and the date. Posts are already sorted newest first and include `author` and, when linked to a game, `game` (`title` and `coverUrl`).
+- [16 JS] Add a "new post" box that calls `POST /api/posts` with `{ content }` (1 to 2000 characters) and, optionally, a `gameId`. Put the new post at the top of the list without reloading the page.
+- [17 JS] Let authors edit (`PATCH /api/posts/:postId`) and delete (`DELETE /api/posts/:postId`) their own posts. Compare `post.author._id` with the signed-in user's `_id` to decide whether to show the buttons.
+- [18 JS] Make each author's name a link to `/users/:userId`.
+- [19 JS] A brand-new account follows nobody, so its feed holds only its own posts. Show a friendly message for an empty feed.
 
 ### 9. NewsPanel
 
 File: `src/components/NewsPanel/` (empty).
 
-- [20 ] Load `GET /api/news`. It needs no token, so it works for signed-out visitors too.
-- [21 ] Each item in `items` has `title`, `url`, and `source` (PlayStation Blog, Xbox Wire, or Steam). `summary`, `imageUrl`, and `publishedAt` are present on most items but not all, so handle them being missing.
-- [22 ] Show each as a link that opens in a new tab (`target="_blank" rel="noreferrer"`).
-- [23 ] Place the panel beside the feed on wide screens and below it on phones.
-- [24 ] If the request fails, show "News is unavailable right now" in the panel and leave the rest of the page working.
+- [20 DB] Load `GET /api/news`. It needs no token, so it works for signed-out visitors too.
+- [21 DB] Each item in `items` has `title`, `url`, and `source` (PlayStation Blog, Xbox Wire, or Steam). `summary`, `imageUrl`, and `publishedAt` are present on most items but not all, so handle them being missing.
+- [22 DB] Show each as a link that opens in a new tab (`target="_blank" rel="noreferrer"`).
+- [23 DB] Place the panel beside the feed on wide screens and below it on phones.
+- [24 DB] If the request fails, show "News is unavailable right now" in the panel and leave the rest of the page working.
 
 ## Finishing touches
 
 ### 10. Loading, errors, and layout
 
-- [ 25] Show a loading state while each list is being fetched.
-- [ 26] Check every page at phone width (about 375px).
-- [27 ] Run `npm run lint` and fix what it reports.
-- [28 ] Remove the unused Vite starter files in `src/assets/` (`react.svg`, `vite.svg`) if nothing imports them.
+- [ 25 JS] Show a loading state while each list is being fetched.
+- [ 26 JS] Check every page at phone width (about 375px).
+- [27 JS] Run `npm run lint` and fix what it reports.
+- [28 JS] Remove the unused Vite starter files in `src/assets/` (`react.svg`, `vite.svg`) if nothing imports them.
 
 ### 11. Get ready for deployment
 
-- [ 29] Run `npm run build` and confirm it finishes without errors.
-- [30 ] Tell the backend pair the URL the client will be deployed at. We have to add it to the API's allowed origins, or the browser will block its requests.
+- [ 29 JS] Run `npm run build` and confirm it finishes without errors.
+- [30 DB ] Tell the backend pair the URL the client will be deployed at. We have to add it to the API's allowed origins, or the browser will block its requests.
