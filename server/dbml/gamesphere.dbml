@@ -46,6 +46,7 @@ Table Game {
   coverUrl varchar(2048) [note: 'Link to cover art hosted elsewhere. The image is not stored.']
   releaseDate datetime
   totalRating double [note: 'IGDB combined score from 0 to 100.']
+  totalRatingCount integer [note: 'How many ratings totalRating is based on. Sorted on first by ?sort=popular.']
   igdbUpdatedAt datetime [note: 'When IGDB last changed this game.']
   igdbUrl varchar(2048)
   createdAt datetime [not null]
