@@ -1,8 +1,9 @@
 // Loads ten catalog games into MongoDB for local testing.
 //
-// Each game is matched on title, which is unique on the Game model, so running
-// this again updates those ten documents instead of inserting duplicates.
-// Games added any other way are left as they are.
+// Each game is matched on title. These rows are a fixture, separate from the
+// IGDB import, which matches on igdbId. Running this again updates these ten
+// documents instead of inserting duplicates. Games added any other way are
+// left as they are.
 //
 // Run from server/: npm run seed
 // Requires MONGODB_URI, normally from server/.env (see .env.example).

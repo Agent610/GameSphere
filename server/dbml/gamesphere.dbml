@@ -38,12 +38,16 @@ Table User {
 
 Table Game {
   _id objectid [pk, note: 'MongoDB ObjectId. Collection: games']
-  title varchar(120) [not null, unique]
-  platforms varchar [note: 'Embedded array. Each value is a platform: PlayStation, Xbox, Nintendo, PC, or Mobile.']
-  genres varchar [note: 'Embedded array. Each genre is at most 40 characters.']
-  description varchar(4000)
+  igdbId integer [unique, note: 'IGDB game id. Absent on the hand-written seed games.']
+  title varchar(500) [not null, note: 'Indexed. Not unique: several games can share a name.']
+  platforms varchar [note: 'Embedded array of IGDB platform names, such as PlayStation 2.']
+  genres varchar [note: 'Embedded array. Each genre is at most 80 characters.']
+  description varchar(8000)
   coverUrl varchar(2048) [note: 'Link to cover art hosted elsewhere. The image is not stored.']
   releaseDate datetime
+  totalRating double [note: 'IGDB combined score from 0 to 100.']
+  igdbUpdatedAt datetime [note: 'When IGDB last changed this game.']
+  igdbUrl varchar(2048)
   createdAt datetime [not null]
   updatedAt datetime [not null]
 }
